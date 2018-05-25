@@ -1,0 +1,159 @@
+---
+# ./playbook.sh launch-autoscaling-cluster.yml -e project=lunar -e role=app -e env=production -e package_version=99:production-acme1
+#
+# Launch a new auto scaling cluster from a prebuilt AMI. The latest AMI is
+# selected based on matching tag values with the provided arguments.
+#
+# If no package version is specified, the latest available package built for the target environment is installed.
+
+- import_playbook: plays/validate-env.yml
+- import_playbook: plays/validate-project.yml
+- import_playbook: plays/validate-role.yml
+
+- name: Gather resource information and launch empty auto scaling group
+  hosts: localhost
+  connection: local
+
+  pre_tasks:
+
+    - name: Find matching AMIs
+      ec2_ami_facts:
+        region: "{{ region }}"
+        owner: self
+        filters:
+          "tag:env": "{{ env }}"
+          "tag:project": "{{ project }}"
+          "tag:role": "{{ role }}"
+      register: ami_search
+      failed_when: ami_search.images | length == 0
+      tags: alway
+
+    - name: Determine latest AMI
+      set_fact:
+        latest_ami: "{{ (ami_search.images | sort(attribute='creation_date', reverse=True))[0] }}"
+
+    - name: Search existing auto scaling groups
+      ec2_asg_facts:
+        region: "{{ region }}"
+        tags:
+          env: "{{ env }}"
+          project: "{{ project }}"
+          role: "{{ role }}"
+          stage: pre
+      register: legacy_asgs
+      tags: always
+
+    - name: Ensure existing ASGs are not being_updated (i.e. no other builds in progress)
+      assert:
+        that: not item.1.value
+        msg: "ASG MUTEX IN USE - Auto scaling group '{{ item.0.auto_scaling_group_name }}' is currently being_updated by {{ item.1.value }}"
+      when: item.1.key == asg_mutex_key and (force_update is not defined or not force_update | bool)
+      with_subelements:
+        - "{{ legacy_asgs.results }}"
+        - tags
+      tags: always
+
+    - name: Determine name and tags for new auto scaling group
+      set_fact:
+        pre_asg:
+          name: "{{ project }}-{{ role }}-{{ env }}-{{ date_time_numeric }}"
+          tags:
+            - Name: "{{ customer }}-{{ project }}-{{ env }}-{{ role }}"
+            - env: "{{ env }}"
+            - project: "{{ project }}"
+            - role: "{{ role }}"
+            - build_id: "{{ latest_ami.tags.build_id }}"
+            - build_timestamp: "{{ date_time_numeric }}"
+            - deploy_version: "{{ package_version | default('latest') }}"
+            - stage: pre
+              propagate_at_launch: no
+            - being_updated: "{{ hostvars['localhost'].ansible_hostname }}"
+              propagate_at_launch: no
+      # used for asg_name with mutex play includes
+      tags: always
+
+    - name: Delete previous auto scaling group(s)
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ item.auto_scaling_group_name }}"
+        state: absent
+      async: 600
+      poll: 0
+      with_items: "{{ legacy_asgs.results }}"
+      when: item.auto_scaling_group_name != pre_asg.name
+      tags: terminate
+
+  roles:
+
+    - role: autoscaling
+      tags: autoscaling
+      asg:
+        name: "{{ pre_asg.name }}"
+        health_check: "{{ dms.autoscaling.health_check }}"
+        launch_configuration: "default-{{ env }}"
+        target_group_arns: "{{ elb_target_group_arns[region][project][env][role]['pre'] }}"
+        min_size: 0
+        max_size: 0
+        scaling: "{{ dms.autoscaling.scaling }}"
+        subnet_ids: "{{ subnet_ids[region][project][env][role] }}"
+        tags: "{{ pre_asg.tags }}"
+
+  post_tasks:
+
+    - debug: var=result_asg
+
+
+- name: Create launch configuration and populate auto scaling group
+  hosts: localhost
+  connection: local
+  tags: autoscalingplay
+
+  roles:
+
+    - role: create-launch-configuration
+      tags: create-lc
+      config:
+        image_id: "{{ latest_ami.image_id }}"
+        instance_profile_name: "{{ customer }}-{{ project }}-{{ env }}-{{ role }}"
+        instance_type: t2.small
+        name: "{{ customer }}-{{ project }}-{{ env }}-{{ role }}-{{ date_time_numeric }} ({{ latest_ami.tags.build_id }} / {{ package_version | default('latest') }})"
+        security_group_ids:
+          - "{{ security_group_ids[region][project][env]['all'] | string_or_first_list_item }}"
+          - "{{ security_group_ids[region][project][env][role] | string_or_first_list_item }}"
+        user_data: |
+          #cloud-config
+          hostname: {{ project }}-{{ role }}-{{ env }}
+          packages:
+            - {{ customer }}-{{ project }}-{{ role }}-{{ env }}
+
+    - role: autoscaling
+      tags: autoscaling
+      asg:
+        name: "{{ hostvars['localhost'].pre_asg.name }}"
+        health_check: "{{ dms.autoscaling.health_check }}"
+        launch_configuration: "{{ result_lc.name }}"
+        target_group_arns: "{{ elb_target_group_arns[region][project][env][role]['pre'] }}"
+        min_size: "{{ dms.autoscaling.min_size }}"
+        max_size: "{{ dms.autoscaling.max_size }}"
+        scaling: "{{ dms.autoscaling.scaling }}"
+        sns_notifications: "{{ dms.autoscaling.sns_notifications }}"
+        sns_topic: "{{ dms.autoscaling.sns_topic | default(omit) }}"
+        subnet_ids: "{{ subnet_ids[region][project][env][role] }}"
+        tags: "{{ hostvars['localhost'].pre_asg.tags }}"
+
+  post_tasks:
+
+    - debug: var=latest_ami
+    - debug: var=result_lc
+    - debug: var=result_asg
+    - debug: var=result_sp
+    - debug: var=result_ma
+
+
+- import_playbook: plays/asg-mutex-post.yml
+  vars:
+    asg_name: "{{ pre_asg.name }}"
+  tags: mutex
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

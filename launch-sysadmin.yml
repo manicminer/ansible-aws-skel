@@ -27,7 +27,6 @@
         security_groups:
           - "{{ customer }}-ops-all"
           - "{{ customer }}-ops-sysadmin"
-          - "{{ customer }}-ops-splunk-forwarder"
         tags:
           Name: "{{ customer }}-ops-sysadmin"
           role: sysadmin

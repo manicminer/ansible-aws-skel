@@ -27,7 +27,6 @@
         security_groups:
           - "{{ customer }}-ops-all"
           - "{{ customer }}-ops-ansible"
-          - "{{ customer }}-ops-splunk-forwarder"
         tags:
           Name: "{{ customer }}-ops-ansible"
           role: ansible

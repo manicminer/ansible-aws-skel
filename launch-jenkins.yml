@@ -27,7 +27,6 @@
         security_groups:
           - "{{ customer }}-ops-all"
           - "{{ customer }}-ops-jenkins"
-          - "{{ customer }}-ops-splunk-forwarder"
         tags:
           Name: "{{ customer }}-ops-jenkins"
           role: jenkins
