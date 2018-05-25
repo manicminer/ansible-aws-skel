@@ -1,0 +1,56 @@
+---
+- name: Trust signing key
+  apt_key:
+    url: "http://pkg.jenkins.io/debian-stable/jenkins.io.key"
+    state: present
+
+- name: Add repository
+  apt_repository:
+    repo: "deb http://pkg.jenkins.io/debian-stable binary/"
+    update_cache: yes
+    state: present
+
+- name: Install OpenJDK first (see https://issues.jenkins-ci.org/browse/JENKINS-31814)
+  apt:
+    pkg: openjdk-7-jre-headless
+    update_cache: yes
+    cache_valid_time: 3600
+    state: present
+  when:
+    - ansible_distribution == 'Debian'
+    - ansible_distribution_major_version == '8'
+
+- name: Install Jenkins
+  apt:
+    pkg: jenkins
+    install_recommends: no
+    update_cache: yes
+    cache_valid_time: 3600
+    state: latest
+
+- name: Install Groovy
+  apt:
+    pkg: groovy
+    state: present
+
+- name: Create .ssh directory for Jenkins user
+  file:
+    path: /var/lib/jenkins/.ssh
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0700'
+
+- name: Configure SSH for Jenkins user
+  template:
+    src: ssh_config.j2
+    dest: /var/lib/jenkins/.ssh/config
+    owner: jenkins
+    group: jenkins
+
+- name: Copy theme stylesheet
+  copy:
+    src: jenkins-material-theme.css
+    dest: /srv/www/jenkins-material-theme.css
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,39 @@
+---
+
+# Default region and ec2 keypair
+region: us-east-1
+keypair: "{{ customer }}-ansible"
+
+# AWS account where base AMIs can be found (searches the same account when not specified)
+aws_base_ami_owner: "{{ aws_account_ids['ops'] }}"
+
+# AWS CLI command
+aws_cli: "aws --region={{ region }}"
+
+# Used as descriptive text for created resources
+resource_description: "Managed by Ansible"
+
+# Minimum age of untagged instances before termination
+untagged_instance_timeout: 3600
+
+# Minimum age of pre-stage auto scaling groups before being deleted
+pre_stage_asg_timeout: 14400
+
+# Minimum age of post-stage auto scaling groups before being deleted
+post_stage_asg_timeout: 3600
+
+# Minimum age of unused launch configurations before being deleted
+launch_configuration_timeout: 3600
+
+# The Hosted Zone ID for CloudFront distributions is the same globally, for all accounts
+cloudfront_hosted_zone_id: Z2FDTNDATAQYW2
+
+## Lock/Mutex tags
+# This is the tag Key which is used as a Mutex
+# on a resource during rolling updates, or marks
+# a resource as having been locked for safety.
+asg_lock_key: 'locked'
+asg_mutex_key: 'being_updated'
+elb_mutex_key: 'being_updated'
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

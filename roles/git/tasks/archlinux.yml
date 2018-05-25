@@ -1,0 +1,10 @@
+---
+- name: Install git
+  pacman:
+    name:
+      - git
+      - python-pygit2
+      - python2-pygit2
+    state: present
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

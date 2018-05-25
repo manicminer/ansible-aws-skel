@@ -1,0 +1,18 @@
+---
+- block:
+    - name: Create directory
+      file:
+        path: "~/secrets"
+        mode: 0700
+        state: directory
+
+    - name: Copy vault password
+      copy:
+        dest: "~/secrets/{{ customer }}-vault-password.txt"
+        content: "{{ infrastructure_vault_password }}"
+        mode: 0600
+
+  become: yes
+  become_user: "{{ vault_user }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

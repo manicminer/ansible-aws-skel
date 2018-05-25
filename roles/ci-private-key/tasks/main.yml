@@ -1,0 +1,28 @@
+---
+- block:
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        mode: 0700
+        state: directory
+      with_items:
+        - "~/.ssh"
+        - "~/secrets"
+        - "~/secrets/keys"
+
+    - name: Copy private key to secrets dir
+      copy:
+        dest: "~/secrets/keys/{{ customer }}-ci.pem"
+        content: "{{ ci_private_key }}"
+        mode: 0600
+
+    - name: Symlink .ssh/id_rsa
+      file:
+        src: "~/secrets/keys/{{ customer }}-ci.pem"
+        dest: "~/.ssh/id_rsa"
+        state: link
+
+  become: yes
+  become_user: "{{ key_user }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

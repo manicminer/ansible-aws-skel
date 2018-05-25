@@ -1,0 +1,6 @@
+---
+mutex_tag:
+  asg_mutex_key: "{{ ansible_hostname }}"
+  propagate_at_launch: no
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

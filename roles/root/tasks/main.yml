@@ -1,0 +1,14 @@
+---
+- name: Set root password and generate ssh key
+  user:
+    name: root
+    generate_ssh_key: yes
+    password: "{{ root_password_crypted }}"
+
+- name: Configure email aliases
+  template:
+    src: aliases.j2
+    dest: /etc/aliases
+  notify: newaliases
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

@@ -1,0 +1,14 @@
+---
+- name: Remove ASG mutex tag
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  roles:
+
+    - role: asg-mutex
+      action: remove
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

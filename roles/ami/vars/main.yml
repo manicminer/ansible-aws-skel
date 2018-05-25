@@ -1,0 +1,23 @@
+---
+vendor_amis:
+  debian8:
+    name: "debian-jessie-amd64-hvm-*-ebs"
+    owner: "379101102735" # Debian Project
+    virtualization_type: hvm
+
+  debian9:
+    name: "debian-stretch-hvm-x86_64-gp2-*"
+    owner: "379101102735" # Debian Project
+    virtualization_type: hvm
+
+  ubuntu14:
+    name: "ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"
+    owner: "099720109477" # Canonical
+    virtualization_type: hvm
+
+  ubuntu16:
+    name: "ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"
+    owner: "099720109477" # Canonical
+    virtualization_type: hvm
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

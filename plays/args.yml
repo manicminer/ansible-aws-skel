@@ -1,0 +1,22 @@
+---
+- name: Validate required variables
+  hosts: localhost
+  connection: local
+  tags: always
+
+  tasks:
+
+    - name: Ensure environment is specified
+      assert:
+        that:
+          - env is defined
+          - env in environments
+        msg: "env is a required playbook variable"
+
+    - name: Add localhost to environment group
+      add_host:
+        name: localhost
+        groups: "tag_env_{{ env }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

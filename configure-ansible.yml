@@ -1,0 +1,41 @@
+---
+# ./playbook.sh configure-ansible.yml -e env=ops
+
+- import_playbook: plays/validate-env.yml
+
+- import_playbook: plays/group.yml
+  vars:
+    hosts_pattern: "tag_ansible_true:&tag_role_ansible:&tag_env_{{ env }}"
+    target_group: ansible
+
+
+- import_playbook: plays/common.yml
+  vars:
+    hosts_pattern: ansible
+
+
+- hosts: ansible
+  become: yes
+
+  roles:
+
+    - role: ansible
+      tags: ansible
+
+    - role: java
+      tags: java
+
+    - role: ci-private-key
+      tags: ci-private-key
+      key_user: ansible
+
+    - role: ansible-private-key
+      tags: ansible-private-key
+      key_user: ansible
+
+    - role: infrastructure-vault-password
+      tags: infrastructure-vault-password
+      vault_user: ansible
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

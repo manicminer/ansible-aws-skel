@@ -1,0 +1,20 @@
+---
+
+- name: Terminate instance(s)
+  hosts: "{{ hosts_pattern }}"
+  connection: local
+  gather_facts: no
+  tags: terminate
+
+  tasks:
+
+    - name: Terminate instance(s)
+      ec2:
+        instance_ids: "{{ ec2_id }}"
+        region: "{{ region }}"
+        state: absent
+        wait: yes
+      delegate_to: localhost
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

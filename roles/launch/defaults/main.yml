@@ -1,0 +1,27 @@
+---
+# Image type, must be present in valid_image_types
+image_type: ubuntu16
+
+# Valid image types (must also be handled in launch/meta/main.yml)
+valid_image_types:
+  - debian8
+  - debian9
+  - ubuntu14
+  - ubuntu16
+
+# Host group in which to add newly launched instances
+launch_group: launch
+
+# Launch policy, either 'balanced' or 'per-subnet'
+launch_policy: balanced
+
+# Default instance tags
+default_tags:
+  env: "{{ env }}"
+  os: "{{ image_type | regex_replace('[^[a-zA-Z]', '') }}"
+  ansible: "true"
+
+# Starting number for launching multiple instances
+ordinal_start: 1
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

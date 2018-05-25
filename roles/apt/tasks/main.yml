@@ -1,0 +1,25 @@
+---
+- name: Upgrade packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+    #cache_valid_time: 3600
+  register: upgrade_packages
+  until: upgrade_packages is success
+  retries: 2
+  delay: 5
+
+- name: Install Python dependency and unattended upgrades
+  apt:
+    pkg: "{{ item }}"
+    state: present
+  with_items:
+    - python-pycurl
+    - unattended-upgrades
+
+- name: Configure apt unattended upgrades
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

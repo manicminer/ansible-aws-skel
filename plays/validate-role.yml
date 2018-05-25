@@ -1,0 +1,16 @@
+---
+
+- name: Validate supplied role
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  tasks:
+
+    - assert:
+        that: role is defined
+        msg: Must specify role
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

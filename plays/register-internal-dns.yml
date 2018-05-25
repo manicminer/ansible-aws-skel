@@ -1,0 +1,15 @@
+---
+
+- name: Register internal DNS
+  hosts: "{{ hosts_pattern }}"
+
+  roles:
+
+    - role: dns
+      tags: dns
+      config:
+        hostname: "{{ hostname }}"
+        ip: "{{ ansible_default_ipv4.address }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

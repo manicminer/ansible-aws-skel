@@ -1,0 +1,11 @@
+---
+- name: Install packages
+  package:
+    name:
+      - heirloom-mailx
+      - mime-construct
+      - postfix
+      - postfix-pcre
+    state: present
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

@@ -1,0 +1,48 @@
+---
+- name: Create staff group
+  group:
+    name: staff
+    system: yes
+    state: present
+
+- name: Create staff users
+  user:
+    name: "{{ item.username }}"
+    createhome: yes
+    groups:
+      - staff
+    shell: "{{ item.shell }}"
+    state: present
+  with_items: "{{ staff }}"
+
+- name: Set authorized_keys for staff
+  authorized_key:
+    user: "{{ item.0.username }}"
+    key: "{{ item.1 }}"
+    manage_dir: yes
+  with_subelements:
+    - "{{ staff }}"
+    - public_keys
+    - skip_missing: yes
+
+- name: Copy vault password
+  include_role:
+    name: infrastructure-vault-password
+    private: yes
+  vars:
+    vault_user: "{{ user.username }}"
+  with_items: "{{ staff }}"
+  loop_control:
+    loop_var: user
+
+- name: Copy Ansible private key
+  include_role:
+    name: ansible-private-key
+    private: yes
+  vars:
+    key_user: "{{ user.username }}"
+  with_items: "{{ staff }}"
+  loop_control:
+    loop_var: user
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

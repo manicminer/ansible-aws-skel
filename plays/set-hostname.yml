@@ -1,0 +1,16 @@
+---
+
+- name: Set hostname
+  hosts: "{{ hosts_pattern }}"
+  become: yes
+
+  roles:
+
+    - role: hostname
+      tags: hostname
+      config:
+        hostname: "{{ hostname }}"
+        ip: "{{ ansible_default_ipv4.address }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,139 @@
+---
+# Launch an EC2 instance into a VPC
+#
+# At the end, add the instance to the environment group (i.e. staging,
+# production, etc) so that the instance(s) group memberships will be 'launch'
+# and 'staging', for example.
+#
+# Launch policy determines which subnets are used, and how many instances are launched.
+#
+# balanced: one subnet is selected at random from the subnets given. total instances = 1 x count
+# per-subnet: one instances is launched in each subnet. total instances = num subnets x count
+
+- name: Ensure required role arguments are specified
+  assert:
+    that:
+      - env is defined
+      - instance is defined
+      - launch_group is defined
+      - launch_policy in ['balanced', 'per-subnet']
+      - subnets is defined
+      - subnets | is_list
+    msg: Missing role argument
+
+- assert:
+    that:
+      - image is defined
+      - image_type in valid_image_types
+    msg: "image_type must be one of: {{ valid_image_types | join(', ') }}"
+
+- name: Determine if we are running from EC2 instance
+  local_action:
+    module: ec2_facts
+
+- name: Determine subnet(s) to use for specified launch policy
+  set_fact:
+    launch_subnets: "{{ item.subnets }}"
+  when: launch_policy == item.policy
+  with_items:
+    - policy: balanced
+      subnets: ["{{ subnets | random }}"]
+    - policy: per-subnet
+      subnets: "{{ subnets | sort }}"
+
+- name: Determine tags to set
+  set_fact:
+    tags: "{{ default_tags | combine(instance.tags) }}"
+
+- name: Launch EC2 instance(s)
+  ec2:
+    region: "{{ region }}"
+    # role arguments
+    exact_count: "{{ exact_count | default(omit) }}"
+    count_tag: "{{ count_tag | default(omit) }}"
+    image: "{{ image }}"
+    keypair: "{{ keypair }}"
+
+    # instance dictionary settings:
+    assign_public_ip: "{{ instance.assign_public_ip | default(omit) }}"
+    count: "{{ instance.count | default(omit) }}"
+    ebs_optimized: "{{ instance.ebs_optimized | default(omit) }}"
+    group: "{{ instance.security_groups }}"
+    instance_profile_name: "{{ instance.instance_profile_name | default(omit) }}"
+    instance_tags: "{{ tags }}"
+    instance_type: "{{ instance.type }}"
+    monitoring: "{{ instance.monitoring | default(true) }}"
+    placement_group: "{{ instance.placement_group | default(omit) }}"
+    #state: running
+    termination_protection: "{{ instance.termination_protection | default(omit) }}"
+    user_data: "{{ instance.user_data | default(omit) }}"
+    volumes: "{{ instance.volumes | default(omit) }}"
+    vpc_subnet_id: "{{ item }}"
+    wait: yes
+  with_items: "{{ launch_subnets }}"
+  delegate_to: localhost
+  register: result_ec2
+
+- debug:
+    var: result_ec2
+
+- name: Determine host groups to join
+  set_fact:
+    host_groups:
+      - "{{ launch_group }}"
+      - "tag_os_{{ tags['os'] }}"
+      - "tag_env_{{ env }}"
+      - "tag_project_{{ tags['project'] }}"
+      - "tag_role_{{ tags['role'] }}"
+
+- name: Determine additional host groups to join
+  set_fact:
+    host_groups: "{{ host_groups | push('tag_role_' ~ tags['build_role'] if 'build_role' in tags else None) }}"
+
+- name: Determine whether to target instances by public or private IP address
+  set_fact:
+    host_attribute: "{{ item.attribute }}"
+  when: item.condition
+  with_items:
+    - attribute: private_ip
+      condition: "{{ hostvars['localhost'].ansible_ec2_instance_id is defined }}"
+    - attribute: public_ip
+      condition: "{{ hostvars['localhost'].ansible_ec2_instance_id is not defined }}"
+
+- name: Register instance in dynamic inventory
+  add_host:
+    name: "{{ item[host_attribute] }}"
+    groups: "{{ host_groups | join(',') }}"
+    ec2_id: "{{ item.id }}"
+  when: item.state == 'running'
+  with_flattened:
+    - "{{ result_ec2.results | map(attribute='instances') | list }}"
+    - "{{ result_ec2.results | map(attribute='tagged_instances') | list }}"
+
+- debug:
+    msg: "{{ {item: groups[item]} }}"
+  with_items: "{{ host_groups }}"
+
+- name: Name instances with an ordinal suffix (-N)
+  ec2_tag:
+    resource: "{{ item.1 }}"
+    tags:
+      Name: "{{ instance.tags.Name }}-{{ item.0 + ordinal_start | int }}"
+  when: instance.tags.Name and result_ec2.results | count > 1
+  with_indexed_items: "{{ result_ec2.results | map(attribute='instance_ids') | list }}"
+  delegate_to: localhost
+
+- name: Wait for SSH
+  wait_for:
+    host: "{{ item }}"
+    port: 22
+    timeout: 420
+    state: started
+  with_items: "{{ groups[launch_group] }}"
+
+- name: Arbitrary pause to avoid SSH failures
+  pause:
+    seconds: 10
+  when: result_ec2 is changed
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

@@ -1,0 +1,14 @@
+---
+- name: Create .ssh dir
+  file:
+    path: "~/.ssh"
+    mode: 0700
+    state: directory
+
+- name: Set authorized_keys
+  template:
+    src: authorized_keys.j2
+    dest: "~/.ssh/authorized_keys"
+    mode: 0644
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

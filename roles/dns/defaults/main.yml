@@ -1,0 +1,6 @@
+---
+config:
+  ttl: 60
+  zone_type: internal
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

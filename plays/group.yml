@@ -1,0 +1,17 @@
+---
+- hosts: "{{ hosts_pattern }}"
+  connection: local
+  gather_facts: no
+  tags: always
+
+  vars:
+    force: no
+
+  tasks:
+
+    - group_by:
+        key: "{{ target_group }}"
+      when: groups[target_group] is not defined or force | bool
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,14 @@
+---
+
+- name: Validate supplied hostname
+  hosts: localhost
+  connection: local
+
+  tasks:
+
+    - assert:
+        that: hostname is defined
+        msg: Must specify hostname for the new instance
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

@@ -1,0 +1,43 @@
+---
+# AWS credentials are explicitly set here because these tasks are often run with delegation,
+# and due to some bug the environment variables are not retained in a way that modules can
+# consume them, but they are still present at play level.
+# Possibly related: https://github.com/ansible/ansible/issues/10638
+
+- name: Stop instance
+  ec2:
+    aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default(omit) }}"
+    aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default(omit) }}"
+    security_token: "{{ lookup('env', 'AWS_SECURITY_TOKEN') | default(omit) }}"
+    region: "{{ region }}"
+    instance_id: "{{ ec2_id }}"
+    wait: yes
+    state: stopped
+
+- name: Create AMI
+  ec2_ami:
+    aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default(omit) }}"
+    aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default(omit) }}"
+    security_token: "{{ lookup('env', 'AWS_SECURITY_TOKEN') | default(omit) }}"
+    region: "{{ region }}"
+    instance_id: "{{ ec2_id }}"
+    name: "{{ config.name | truncate(128, True, '') }}"
+    description: "{{ config.description | truncate(255, True, '') }}"
+    device_mapping: "{{ config.device_mapping | default(omit) }}"
+    launch_permissions:
+      user_ids: "{{ aws_account_ids.values() }}"
+    wait: yes
+    state: present
+  register: ami
+
+- name: Tag AMI
+  ec2_tag:
+    aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default(omit) }}"
+    aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default(omit) }}"
+    security_token: "{{ lookup('env', 'AWS_SECURITY_TOKEN') | default(omit) }}"
+    region: "{{ region }}"
+    resource: "{{ ami.image_id }}"
+    state: present
+    tags: "{{ config.tags }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

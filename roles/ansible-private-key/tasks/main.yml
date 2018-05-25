@@ -1,0 +1,21 @@
+---
+- block:
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        mode: 0700
+        state: directory
+      with_items:
+        - "~/secrets"
+        - "~/secrets/keys"
+
+    - name: Copy private key
+      copy:
+        dest: "~/secrets/keys/{{ customer }}-ansible.pem"
+        content: "{{ ansible_private_key }}"
+        mode: 0600
+
+  become: yes
+  become_user: "{{ key_user }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

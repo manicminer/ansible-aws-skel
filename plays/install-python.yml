@@ -1,0 +1,19 @@
+---
+
+- name: Install Python
+  hosts: "{{ hosts_pattern }}"
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+    - raw: "if find /var/cache/apt/pkgcache.bin -mmin +120; then apt-get -y update; fi"
+
+    - raw: "apt-get -y install python"
+      register: install_python
+      until: install_python is success
+      retries: 2
+      delay: 5
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

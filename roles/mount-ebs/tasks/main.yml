@@ -1,0 +1,48 @@
+---
+- name: Create filesystem
+  filesystem:
+    dev: "{{ volume.device_name }}"
+    fstype: "{{ volume.filesystem }}"
+    resizefs: yes
+
+- name: Rename existing directory
+  command: "mv '{{ volume.mount_point }}' '{{ volume.mount_point }}.bak'"
+  when: volume.move_files | bool
+
+- name: Create mount point
+  file:
+    path: "{{ volume.mount_point }}"
+    state: directory
+
+- name: Mount volume
+  mount:
+    name: "{{ volume.mount_point }}"
+    fstype: "{{ volume.filesystem }}"
+    src: "{{ volume.device_name }}"
+    state: mounted
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400
+  when:
+    - ansible_os_family == 'Debian'
+    - volume.move_files | bool
+
+- name: Ensure rsync installed
+  package:
+    name: rsync
+    state: present
+  when: volume.move_files | bool
+
+- name: Move files
+  command: "rsync -a --exclude='lost+found' '{{ volume.mount_point }}.bak/' '{{ volume.mount_point }}/'"
+  when: volume.move_files | bool
+
+- name: Remove old directory
+  file:
+    path: "{{ volume.mount_point }}.bak"
+    state: absent
+  when: volume.move_files | bool
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

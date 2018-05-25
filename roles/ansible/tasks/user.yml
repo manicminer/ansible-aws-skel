@@ -1,0 +1,36 @@
+---
+- name: Create ansible user
+  user:
+    name: ansible
+    home: /usr/local/ansible
+    createhome: yes
+    shell: /bin/bash
+    state: present
+
+- block:
+    - name: Create jenkins directory
+      file:
+        path: "~/jenkins"
+        state: directory
+
+    - name: Create .ssh directory
+      file:
+        path: "~/.ssh"
+        state: directory
+
+    - name: Allow CI login
+      lineinfile:
+        dest: "~/.ssh/authorized_keys"
+        line: "{{ ci_ssh_public_key }}"
+        create: yes
+        state: present
+
+    - name: Configure SSH
+      template:
+        src: ssh_config.j2
+        dest: "~/.ssh/config"
+
+  become: yes
+  become_user: ansible
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

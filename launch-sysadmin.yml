@@ -1,0 +1,81 @@
+---
+# ./playbook.sh launch-sysadmin.yml -e env=ops -e hostname=sysadmin.ops.acme.net
+
+- import_playbook: plays/validate-env.yml
+- import_playbook: plays/validate-hostname.yml
+
+- name: Launch instance
+  hosts: localhost
+  connection: local
+
+  roles:
+
+    - role: launch
+      tags: launch
+      image_type: ubuntu16
+      image_owner: vendor
+      launch_group: sysadmin
+      exact_count: 1
+      count_tag:
+        env: "{{ env }}"
+        project: ops
+        role: sysadmin
+        hostname: "{{ hostname }}"
+      subnets: "{{ subnet_ids[region].ops.public }}"
+      instance:
+        instance_profile_name: "{{ customer }}-ops-sysadmin"
+        security_groups:
+          - "{{ customer }}-ops-all"
+          - "{{ customer }}-ops-sysadmin"
+          - "{{ customer }}-ops-splunk-forwarder"
+        tags:
+          Name: "{{ customer }}-ops-sysadmin"
+          role: sysadmin
+          project: ops
+          hostname: "{{ hostname }}"
+        type: t2.small
+        volumes:
+          - device_name: /dev/sda1
+            volume_type: gp2
+            volume_size: 16
+            delete_on_termination: yes
+
+  post_tasks:
+
+    - include_role:
+        name: dns
+        private: yes
+      tags: dns
+      vars:
+        config:
+          hostname: "{{ hostname }}"
+          ip: "{{ instance.public_ip }}"
+          zone_type: external
+      with_flattened:
+        - "{{ result_ec2.results | map(attribute='instances') | list }}"
+        - "{{ result_ec2.results | map(attribute='tagged_instances') | list }}"
+      loop_control:
+        loop_var: instance
+      when: instance.state == 'running'
+
+
+- import_playbook: plays/install-python.yml
+  vars:
+    hosts_pattern: sysadmin
+
+
+- import_playbook: plays/set-hostname.yml
+  vars:
+    hosts_pattern: sysadmin
+
+
+- import_playbook: plays/register-internal-dns.yml
+  vars:
+    hosts_pattern: sysadmin
+    project: ops
+
+
+- import_playbook: configure-sysadmin.yml
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

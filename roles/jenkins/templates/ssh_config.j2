@@ -1,0 +1,10 @@
+Host *.{{ internal_domain }} 10.* 172.*
+StrictHostKeyChecking no
+
+Host github.com
+StrictHostKeyChecking no
+
+Host *
+CanonicalizeHostname yes
+CanonicalDomains {{ internal_domain }}
+CanonicalizeMaxDots 0

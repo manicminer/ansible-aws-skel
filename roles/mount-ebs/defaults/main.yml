@@ -1,0 +1,6 @@
+---
+volume:
+  filesystem: ext4
+  move_files: no
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

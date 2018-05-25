@@ -1,0 +1,52 @@
+---
+- name: Install packages (Arch)
+  pacman:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - python-pip
+    - python-virtualenv
+    - python2-pip
+    - python2-virtualenv
+
+- name: Install supporting packages in virtualenv
+  pip:
+    name: "{{ item }}"
+    state: latest
+    virtualenv: /usr/local/ansible
+    virtualenv_python: "python2.7"
+  with_items:
+    - boto
+    - boto3
+    - jinja2
+    - pycrypto
+    - pyyaml
+
+- name: Install Ansible from git in virtualenv
+  pip:
+    name: "git+https://github.com/atplanet/ansible.git@production"
+    editable: no
+    state: forcereinstall
+    virtualenv: /usr/local/ansible
+    virtualenv_python: "python2.7"
+
+- name: Install Ansible wrapper
+  template:
+    src: ansible.sh.j2
+    dest: /usr/local/bin/ansible
+    mode: 0755
+
+- name: Symlinks for Ansible commands
+  file:
+    src: /usr/local/bin/ansible
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+  with_items:
+    - ansible-doc
+    - ansible-galaxy
+    - ansible-playbook
+    - ansible-pull
+    - ansible-vault
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

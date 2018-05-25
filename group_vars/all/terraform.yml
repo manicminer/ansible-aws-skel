@@ -1,0 +1,5 @@
+---
+# TODO: set the latest stable Terraform version
+terraform_version: '0.9.11'
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

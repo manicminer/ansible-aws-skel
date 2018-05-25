@@ -1,0 +1,116 @@
+---
+# ./playbook.sh cleanup-autoscaling.yml
+
+- name: Clean up old pre-stage auto scaling groups
+  hosts: localhost
+  connection: local
+  tags: asg-pre
+
+  tasks:
+
+    - name: Identify pre stage groups
+      ec2_asg_facts:
+        region: "{{ region }}"
+        tags:
+          stage: pre
+      register: pre_groups
+      tags: find
+
+    - name: Lock pre stage groups before deletion
+      include_role:
+        name: asg-mutex
+      vars:
+        action: add
+        asg_name: "{{ asg.auto_scaling_group_name }}"
+      when: date_time_numeric | seconds_between(asg.tags | asg_tag_value('deploy_timestamp')) > post_stage_asg_timeout 
+      with_items: "{{ pre_groups.results }}"
+      loop_control:
+        loop_var: asg
+
+    - name: Terminate pre stage groups having deploy_timestamp older than configured timeout
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ asg.auto_scaling_group_name }}"
+        state: absent
+      when: date_time_numeric | seconds_between(asg.tags | asg_tag_value('deploy_timestamp')) > pre_stage_asg_timeout 
+      with_items: "{{ pre_groups.results }}"
+      loop_control:
+        loop_var: asg
+
+
+- name: Clean up old post-stage auto scaling groups
+  hosts: localhost
+  connection: local
+  tags: asg-post
+
+  tasks:
+
+    - name: Identify post stage groups
+      ec2_asg_facts:
+        region: "{{ region }}"
+        tags:
+          stage: post
+      register: post_groups
+      tags: find
+
+    - name: Lock post stage groups before deletion
+      include_role:
+        name: asg-mutex
+      vars:
+        action: add
+        asg_name: "{{ asg.auto_scaling_group_name }}"
+      when: date_time_numeric | seconds_between(asg.tags | asg_tag_value('deploy_timestamp')) > post_stage_asg_timeout 
+      with_items: "{{ post_groups.results }}"
+      loop_control:
+        loop_var: asg
+
+    - name: Terminate post stage groups having deploy_timestamp older than configured timeout
+      ec2_asg:
+        region: "{{ region }}"
+        name: "{{ asg.auto_scaling_group_name }}"
+        state: absent
+      when: date_time_numeric | seconds_between(asg.tags | asg_tag_value('deploy_timestamp')) > post_stage_asg_timeout 
+      with_items: "{{ post_groups.results }}"
+      loop_control:
+        loop_var: asg
+
+
+- name: Clean up unused launch configurations
+  hosts: localhost
+  connection: local
+  tags: lc
+
+  vars:
+    cleanup_lcs: []
+
+  tasks:
+
+    - name: Retrieve auto scaling groups details
+      ec2_asg_facts:
+        region: "{{ region }}"
+      register: asgs
+
+    - name: Find launch configurations
+      ec2_lc_facts:
+        region: "{{ region }}"
+      register: lcs
+
+    - name: Construct list of launch configurations not attached to any auto scaling group
+      set_fact:
+        cleanup_lcs: "{{ cleanup_lcs + [item.launch_configuration_name] }}"
+      when:
+        - item.launch_configuration_name | match(customer ~ '-')
+        - not item.launch_configuration_name | match('(' ~ customer ~'-)?default')
+        - item.launch_configuration_name not in asgs.results | map(attribute='launch_configuration_name') | list
+        - hostvars.localhost.ansible_date_time.iso8601 | seconds_between(item.created_time) > launch_configuration_timeout
+      with_items: "{{ lcs.launch_configurations }}"
+
+    - name: Delete launch configurations
+      ec2_lc:
+        region: "{{ region }}"
+        name: "{{ item }}"
+        state: absent
+      with_items: "{{ cleanup_lcs }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

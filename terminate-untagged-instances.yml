@@ -1,0 +1,30 @@
+---
+# ./playbook.sh terminate-untagged-instances.yml
+
+- name: Gather facts from localhost
+  hosts: localhost
+  connection: local
+
+
+- name: Find untagged instances
+  hosts: tag_none
+  connection: local
+  gather_facts: no
+
+  tasks:
+
+    - name: Group qualifying instances
+      group_by:
+        key: untagged
+      when:
+        - ec2_state == 'running'
+        - hostvars.localhost.ansible_date_time.iso8601 | seconds_between(ec2_launch_time) > untagged_instance_timeout
+      tags: always
+
+
+- include: plays/terminate.yml
+  vars:
+    hosts_pattern: "untagged"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

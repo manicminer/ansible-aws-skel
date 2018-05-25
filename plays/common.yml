@@ -1,0 +1,39 @@
+---
+
+- name: Apply common configuration
+  hosts: "{{ hosts_pattern }}"
+  become: yes
+  tags: common-play
+
+  roles:
+
+    - role: apt
+      tags: apt
+
+    - role: resolv-conf
+      tags: resolv-conf
+
+    - role: authorized-keys
+      tags: authorized-keys
+      become_user: "{{ ansible_user }}"
+
+    - role: common
+      tags: common
+
+    - role: sudo
+      tags: sudo
+
+    - role: root
+      tags: root
+
+    - role: timezone
+      tags: timezone
+
+    - role: postfix
+      tags: postfix
+
+    - role: git
+      tags: git
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

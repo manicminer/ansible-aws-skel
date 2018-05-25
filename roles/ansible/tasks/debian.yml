@@ -1,0 +1,32 @@
+---
+- name: Install packages (Debian)
+  apt:
+    pkg: "{{ item }}"
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  with_items:
+    - build-essential
+    - git
+    - libbz2-dev
+    - libreadline-dev
+    - libsqlite0-dev
+    - libsqlite3-dev
+    - libssl-dev
+    - python-dev
+    - python-pip
+
+- name: Install Python packages
+  pip:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - ansible
+    - boto
+    - boto3
+    - jinja2
+    - netaddr
+    - pycrypto
+    - pyyaml
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

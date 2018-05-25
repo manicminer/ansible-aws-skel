@@ -1,0 +1,21 @@
+---
+
+- name: Validate supplied project
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  tasks:
+
+    - assert:
+        that: project is defined
+        msg: Must specify project
+
+    - name: Add localhost to project group
+      add_host:
+        name: localhost
+        groups: "tag_project_{{ project }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

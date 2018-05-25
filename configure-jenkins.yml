@@ -1,0 +1,40 @@
+---
+# ./playbook.sh configure-jenkins.yml -e env=ops
+
+- import_playbook: plays/validate-env.yml
+
+- import_playbook: plays/group.yml
+  vars:
+    hosts_pattern: "tag_ansible_true:&tag_role_jenkins:&tag_env_{{ env }}"
+    target_group: jenkins
+
+
+- import_playbook: plays/common.yml
+  vars:
+    hosts_pattern: jenkins
+
+
+- hosts: jenkins
+  become: yes
+
+  roles:
+
+    - role: nginx-proxy
+      tags: nginx
+      nginx:
+        enforce_ssl: yes
+        proxy_pass:  127.0.0.1:8080
+        user: www-data
+        worker_processes: "{{ ansible_processor_count }}"
+        pid: /var/run/nginx.pid
+        worker_connections: 1024
+
+    - role: jenkins
+      tags: jenkins
+
+    - role: ci-private-key
+      tags: ci-private-key
+      key_user: jenkins
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

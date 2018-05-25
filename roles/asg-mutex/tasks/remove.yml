@@ -1,0 +1,11 @@
+---
+# Remove being_updated tag
+# This uses a few filters to extract the being_updated tag from the current ASG tags
+- name: Remove being_updated tag from ASG
+  ec2_asg:
+    region: "{{ region }}"
+    name: "{{ asg_name }}"
+    health_check_type: "{{ asg_details.results[0].health_check_type }}" # required to prevent resetting to the default
+    tags: "{{ asg_details.results[0].tags | format_asg_tags | symmetric_difference(asg_details.results[0].tags | format_asg_tags | selectattr('being_updated', 'defined') | list) | list }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

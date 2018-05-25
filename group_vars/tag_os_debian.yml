@@ -1,0 +1,5 @@
+---
+ansible_python_interpreter: /usr/bin/python2
+ansible_user: admin
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

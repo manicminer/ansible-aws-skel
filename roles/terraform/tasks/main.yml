@@ -1,0 +1,10 @@
+---
+- name: Download Terraform
+  unarchive:
+    src: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: /usr/local/bin
+    creates: /usr/local/bin/terraform
+    mode: 0755
+    remote_src: yes
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

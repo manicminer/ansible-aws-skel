@@ -1,0 +1,16 @@
+---
+- name: Search for AMIs
+  ec2_ami_facts:
+    aws_access_key: "{{ lookup('env', 'KT_OPS_AWS_ACCESS_KEY_ID') | default(omit) }}"
+    aws_secret_key: "{{ lookup('env', 'KT_OPS_AWS_SECRET_ACCESS_KEY') | default(omit) }}"
+    security_token: "{{ lookup('env', 'KT_OPS_AWS_SECURITY_TOKEN') | default(omit) }}"
+    region: "{{ region }}"
+    owners: "{{ aws_base_ami_owner | default('self') }}"
+    filters:
+      "tag:base": "true"
+      "tag:image_type": "{{ image_type }}"
+  delegate_to: localhost
+  register: ami_search
+  failed_when: ami_search.images | length == 0
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,64 @@
+---
+- debug:
+    var: config
+
+- name: Determine record name
+  set_fact:
+    record: "{{ item.record }}"
+  when: item.when
+  with_items:
+    - record: "{{ config.hostname }}"
+      when: "{{ config.zone_type == 'internal' and config.hostname | search(internal_domain ~ '$') }}"
+    - record: "{{ config.hostname }}.{{ internal_domain }}"
+      when: "{{ config.zone_type == 'internal' and not config.hostname | search(internal_domain ~ '$') }}"
+    - record: "{{ config.hostname }}"
+      when: "{{ config.zone_type == 'external' and config.hostname | search(external_domain ~ '$') }}"
+    - record: "{{ config.hostname }}.{{ external_domain }}"
+      when: "{{ config.zone_type == 'external' and not config.hostname | search(external_domain ~ '$') }}"
+
+- name: Set A record
+  route53:
+    command: create
+    overwrite: yes
+    private_zone: "{{ config.zone_type == 'internal' }}"
+    record: "{{ record }}"
+    zone: "{{ internal_domain if config.zone_type == 'internal' else external_zone }}"
+    type: A
+    ttl: "{{ config.ttl }}"
+    value: "{{ config.ip }}"
+    vpc_id: "{{ vpc_ids[region][project][env] | string_or_first_list_item if config.zone_type == 'internal' else omit }}"
+    #wait: yes
+  delegate_to: localhost
+  when: "'ip' in config"
+
+- name: Set CNAME record
+  route53:
+    command: create
+    overwrite: yes
+    private_zone: "{{ config.zone_type == 'internal' }}"
+    record: "{{ record }}"
+    zone: "{{ internal_domain if config.zone_type == 'internal' else external_zone }}"
+    type: CNAME
+    ttl: "{{ config.ttl }}"
+    value: "{{ config.cname }}"
+    vpc_id: "{{ vpc_ids[region][project][env] | string_or_first_list_item if config.zone_type == 'internal' else omit }}"
+    #wait: yes
+  delegate_to: localhost
+  when: "'cname' in config"
+
+- name: Set PTR record
+  route53:
+    command: create
+    overwrite: yes
+    private_zone: yes
+    record: "{{ config.ip | ipaddr('revdns') }}"
+    zone: "{{ config.ip | ipaddr('revdns') | regex_replace('^[^.]+\\.[^.]+\\.(.*)', '\\1') }}"
+    type: PTR
+    ttl: "{{ config.ttl }}"
+    value: "{{ config.hostname }}."
+    vpc_id: "{{ vpc_ids[region][project][env] | string_or_first_list_item }}"
+    #wait: yes
+  delegate_to: localhost
+  when: config.zone_type == 'internal' and 'ip' in config
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,22 @@
+---
+- name: Validate image_owner
+  assert:
+    that:
+      - image_owner is defined
+      - image_owner in ['self', 'vendor']
+    msg: "Must specify a valid image_owner (either 'self' or 'vendor')"
+
+- name: Validate image_type
+  assert:
+    that:
+      - image_type is defined
+      - image_type in vendor_amis or image_owner == 'self'
+    msg: "Must specify a valid image_type"
+
+- include_tasks: "search_{{ image_owner }}.yml"
+
+- name: Set variable image to our AMI ID
+  set_fact:
+    image: "{{ (ami_search.images | sort(attribute='creation_date', reverse=True))[0].image_id }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

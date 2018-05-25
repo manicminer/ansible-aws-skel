@@ -1,0 +1,5 @@
+---
+jre_packages:
+  - openjdk-8-jre
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

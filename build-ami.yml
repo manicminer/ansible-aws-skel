@@ -1,0 +1,86 @@
+---
+# ./playbook.sh build-ami.yml -e image_type=ubuntu16 -e build_id=1234
+
+- include: plays/group.yml
+  vars:
+    hosts_pattern: "tag_role_ami-build:&tag_image_type_{{ image_type }}"
+    target_group: legacy
+
+
+- include: plays/terminate.yml
+  vars:
+    hosts_pattern: "legacy"
+
+
+- name: Launch instance
+  hosts: localhost
+  connection: local
+
+  vars:
+    env: ops
+
+  pre_tasks:
+
+    - assert:
+        that:
+          - image_type is defined
+          - image_type in ['debian8', 'debian9', 'ubuntu14', 'ubuntu16']
+        msg: Must specify a valid image_type to build
+
+  roles:
+
+    - role: launch
+      tags: launch
+      image_type: "{{ image_type }}"
+      subnets: "{{ subnet_ids.ops }}"
+      instance:
+        security_groups:
+          - "{{ customer }}-ops-all"
+        tags:
+          Name: "ami-build-{{ image_type }}"
+          role: "ami-build"
+          image_type: "{{ image_type }}"
+        type: t2.small
+
+
+- include: plays/install-python.yml
+  vars:
+    hosts_pattern: launch
+
+
+- include: plays/common.yml
+  vars:
+    hosts_pattern: launch
+
+
+- name: Build new AMI and delete old AMIs
+  hosts: launch
+  connection: local
+
+  roles:
+
+    - role: build-ami
+      tags: build-ami
+      config:
+        name: "{{ customer }}-base-{{ image_type }}-{{ date_time_numeric }}"
+        description: "Base Image / {{ image_type }} / Built by Ansible"
+        tags:
+          Name: "{{ customer }}-base-{{ image_type }}"
+          base: "true"
+          image_type: "{{ image_type }}"
+          build_id: "{{ build_id | default(omit) }}"
+
+    - role: deregister-old-amis
+      config:
+        retention: 5
+        tags:
+          base: "true"
+          image_type: "{{ image_type }}"
+
+
+- include: plays/terminate.yml
+  vars:
+    hosts_pattern: "launch"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

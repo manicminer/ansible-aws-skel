@@ -1,0 +1,5 @@
+---
+# image_owner can be one of "self" or "vendor"
+image_owner: self
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

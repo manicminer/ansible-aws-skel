@@ -1,0 +1,25 @@
+---
+- name: Install packages (RedHat)
+  yum: name={{ item }} state=present
+  with_items:
+    - python-devel
+    - python-pip
+
+- name: Install supporting packages
+  pip:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - boto
+    - boto3
+    - jinja2
+    - pycrypto
+    - pyyaml
+
+- name: Install Ansible from git
+  pip:
+    name: "git+https://github.com/atplanet/ansible.git@production"
+    editable: no
+    state: forcereinstall
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

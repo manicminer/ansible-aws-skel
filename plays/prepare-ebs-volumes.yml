@@ -1,0 +1,16 @@
+---
+- name: Prepare additional EBS volumes
+  hosts: "{{ hosts_pattern }}"
+  become: yes
+
+  tasks:
+
+    - include_role:
+        name: mount-ebs
+        private: yes
+      loop_control:
+        loop_var: volume
+      with_items: "{{ volumes }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

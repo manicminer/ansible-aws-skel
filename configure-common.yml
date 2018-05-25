@@ -1,0 +1,17 @@
+---
+# ./playbook.sh configure-common.yml -e env=ops
+
+- include: plays/args.yml
+
+- include: plays/group.yml
+  vars:
+    hosts_pattern: "tag_env_{{ env }}"
+    target_group: common
+
+
+- include: plays/common.yml
+  vars:
+    hosts_pattern: common
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

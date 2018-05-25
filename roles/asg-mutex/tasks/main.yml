@@ -1,0 +1,22 @@
+---
+- name: Verify action
+  assert:
+    that:
+      - action is defined
+      - action in ['add', 'remove']
+
+- name: Verify asg_name
+  assert:
+    that:
+      - asg_name is defined
+
+- name: Retrieve ASG details
+  ec2_asg_facts:
+    region: "{{ region }}"
+    name: "{{ asg_name }}$"
+  register: asg_details
+  failed_when: asg_details.results | length != 1
+
+- include_tasks: "{{ action }}.yml"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

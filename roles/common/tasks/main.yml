@@ -1,0 +1,61 @@
+---
+- name: Install common packages
+  apt:
+    pkg: "{{ item }}"
+    update_cache: yes
+    cache_valid_time: 3600
+    state: present
+  with_items:
+    - acct
+    - acl
+    - apt-show-versions
+    - binutils
+    - build-essential
+    - bzip2
+    - curl
+    - dnsutils
+    - gcc
+    - geoip-bin
+    - htop
+    - iftop
+    - iptraf
+    - libxml2
+    - libxml2-dev
+    - libxml2-utils
+    - mcrypt
+    - mtr
+    - netcat
+    - ntp
+    - ntpdate
+    - pv
+    - python-openssl
+    - python-passlib
+    - python-pip
+    - python-pyasn1
+    - python-pycurl
+    - python-urllib3
+    - rsync
+    - scalpel
+    - subversion
+    - sysstat
+    - telnet
+    - tmux
+    - traceroute
+    - tree
+    - unrar
+    - vim
+    - wget
+    - zip
+    - zsh
+
+- name: Install Python packages
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - awscli
+    - boto
+    - boto3
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

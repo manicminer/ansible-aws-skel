@@ -1,0 +1,19 @@
+---
+- name: Install nginx
+  apt:
+    pkg: nginx
+    state: present
+  notify: Restart nginx
+
+- name: Configure nginx
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  notify: Restart nginx
+
+- name: Create document root directory
+  file:
+    path: /srv/www
+    state: directory
+
+# vim: set ts=2 sts=2 sw=2 expandtab:

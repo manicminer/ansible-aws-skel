@@ -1,0 +1,13 @@
+---
+- name: Search for vendor AMIs
+  ec2_ami_facts:
+    region: "{{ region }}"
+    owners: "{{ vendor_amis[image_type].owner }}"
+    filters:
+      name: "{{ vendor_amis[image_type].name }}"
+      "virtualization-type": "{{ vendor_amis[image_type].virtualization_type }}"
+  delegate_to: localhost
+  register: ami_search
+  failed_when: ami_search.images | length == 0
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,90 @@
+---
+
+- name: Configure Auto Scaling Group
+  ec2_asg:
+    region: "{{ region }}"
+    name: "{{ asg.name }}"
+    launch_config_name: "{{ asg.launch_configuration }}"
+    vpc_zone_identifier: "{{ asg.subnet_ids }}"
+    health_check_type: "{{ asg.health_check.type }}"
+    health_check_period: "{{ asg.health_check.period }}"
+    desired_capacity: "{{ asg.desired_capacity | default(desired_capacity) | default(asg.min_size) }}"
+    min_size: "{{ asg.min_size }}"
+    max_size: "{{ asg.max_size }}"
+    load_balancers: "{{ asg.load_balancers if 'load_balancers' in asg else omit }}"
+    replace_all_instances: "{{ asg.replace_all_instances | default(omit) }}"
+    target_group_arns: "{{ asg.target_group_arns if 'target_group_arns' in asg else omit }}"
+    tags: "{{ default_tags | union(asg.tags) }}"
+    wait_for_instances: yes
+    wait_timeout: 600
+    state: present
+  register: result_asg
+
+- name: Create SNS Topic 
+  sns_topic:
+    name: "{{ asg.sns_topic }}"
+    purge_subscriptions: no
+    state: present
+    region: "{{ region }}"
+    profile: "{{ profile | default(omit) }}"
+  when: "'sns_notifications' in asg and asg.sns_notifications | bool"
+
+- name: Configure SNS notifications
+  command: aws autoscaling put-notification-configuration --region "{{ region }}" --auto-scaling-group-name "{{ asg.name }}" --topic-arn "{{ asg.sns_topic }}" --notification-types "autoscaling:EC2_INSTANCE_LAUNCH" "autoscaling:EC2_INSTANCE_TERMINATE" "autoscaling:EC2_INSTANCE_LAUNCH_ERROR" "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
+  when: "'sns_notifications' in asg and asg.sns_notifications | bool"
+
+- name: Configure Scaling Policies
+  ec2_scaling_policy:
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    asg_name: "{{ asg.name }}"
+    state: present
+    adjustment_type: "{{ item.adjustment_type }}"
+    min_adjustment_step: "{{ item.min_adjustment_step }}"
+    scaling_adjustment: "{{ item.scaling_adjustment }}"
+    cooldown: "{{ item.cooldown }}"
+  with_items:
+    - name: "Increase Group Size"
+      adjustment_type: "ChangeInCapacity"
+      scaling_adjustment: "+{{ asg.scaling.up.count | default(1) }}"
+      min_adjustment_step: 1
+      cooldown: "{{ asg.scaling.up.cooldown }}"
+    - name: "Decrease Group Size"
+      adjustment_type: "ChangeInCapacity"
+      scaling_adjustment: "-{{ asg.scaling.down.count | default(1) }}"
+      min_adjustment_step: 1
+      cooldown: "{{ asg.scaling.down.cooldown }}"
+  when: "asg.max_size > 1 and 'scaling' in asg and asg.scaling"
+  register: result_sp
+
+- name: Configure Metric Alarms and link to Scaling Policies
+  ec2_metric_alarm:
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: present
+    metric: "CPUUtilization"
+    namespace: "AWS/EC2"
+    statistic: "Average"
+    comparison: "{{ item.comparison }}"
+    threshold: "{{ item.threshold }}"
+    period: 60
+    evaluation_periods: 5
+    unit: "Percent"
+    dimensions:
+      AutoScalingGroupName: "{{ asg.name }}"
+    alarm_actions: "{{ item.alarm_actions }}"
+  with_items:
+    - name: "{{ asg.name }}-ScaleUp"
+      comparison: ">="
+      threshold: "{{ asg.scaling.up.cpu_threshold }}"
+      alarm_actions:
+        - "{{ result_sp.results[0].arn }}"
+    - name: "{{ asg.name }}-ScaleDown"
+      comparison: "<="
+      threshold: "{{ asg.scaling.down.cpu_threshold }}"
+      alarm_actions:
+        - "{{ result_sp.results[1].arn }}"
+  when: "asg.max_size > 1 and 'scaling' in asg and asg.scaling"
+  register: result_ma
+
+# vim: set ts=2 sts=2 sw=2 expandtab:

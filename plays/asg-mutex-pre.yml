@@ -1,0 +1,20 @@
+---
+# Create ASG Mutex, via tags
+# Tag Key: Ansible variable 'asg_mutex_key'
+# Tag Value: Ansible hostname of the system running `ansible-playbook`
+#
+# The mutex can be ignored if `force_update=yes`
+
+- name: Check ASG mutex and tag being_updated
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  roles:
+
+    - role: asg-mutex
+      action: add
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

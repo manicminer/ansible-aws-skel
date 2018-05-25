@@ -1,0 +1,9 @@
+---
+- name: Attach EIP to instance
+  ec2_eip:
+    region: "{{ region }}"
+    device_id: "{{ ec2_id }}"
+    public_ip: "{{ ip }}"
+    state: present
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

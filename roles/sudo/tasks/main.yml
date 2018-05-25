@@ -1,0 +1,15 @@
+---
+- name: Install sudo package
+  package:
+    pkg: sudo
+    state: present
+
+- name: Configure sudoers
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers
+    mode: 0440
+    owner: root
+    group: root
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

@@ -1,0 +1,14 @@
+---
+- name: Install latest version of Git
+  apt:
+    pkg: git
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: Install GitPython
+  apt:
+    pkg: python-git
+    state: present
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

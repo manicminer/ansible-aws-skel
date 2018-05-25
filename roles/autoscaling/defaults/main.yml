@@ -1,0 +1,11 @@
+---
+default_tags:
+  - ansible: true
+    propagate_at_launch: no
+
+asg_properties: {}
+metric_alarms: []
+autoscaling_sns_notifications: no
+no_asg_locking: no
+
+# vim: set ts=2 sts=2 sw=2 et:

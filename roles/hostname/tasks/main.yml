@@ -1,0 +1,28 @@
+---
+- name: Install dbus
+  apt:
+    pkg: dbus
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_distribution == 'Debian'
+
+- name: Determine FQDN
+  set_fact:
+    fqdn: "{{ item.fqdn }}"
+  when: item.when
+  with_items:
+    - fqdn: "{{ config.hostname }}"
+      when: "{{ config.hostname | search(internal_domain ~ '$') }}"
+    - fqdn: "{{ config.hostname }}.{{ internal_domain }}"
+      when: "{{ not config.hostname | search(internal_domain ~ '$') }}"
+
+- name: Set hostname
+  hostname:
+    name: "{{ fqdn }}"
+
+- name: Configure hosts file
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

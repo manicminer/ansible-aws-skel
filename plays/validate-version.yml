@@ -1,0 +1,16 @@
+---
+
+- name: Validate supplied version
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  tasks:
+
+    - assert:
+        that: version is defined
+        msg: Must specify version to deploy
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

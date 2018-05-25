@@ -1,0 +1,5 @@
+---
+internal_domain: production.acme.net
+external_domain: production.acme.net
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

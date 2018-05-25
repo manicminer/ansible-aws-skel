@@ -1,0 +1,13 @@
+---
+nginx:
+  server_name: localhost
+  proxy_pass: "127.0.0.1:8080"
+  user: www-data
+  worker_processes: "{{ ansible_processor_count }}"
+  pid: /var/run/nginx.pid
+  worker_connections: 1024
+  ssl_cert: ""
+  ssl_key: ""
+  enforce_ssl: no
+
+# vim: set ts=2 sts=2 sw=2 expandtab:

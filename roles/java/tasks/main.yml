@@ -1,0 +1,11 @@
+---
+- include_vars: "{{ os }}.yml"
+
+- name: Install Java runtime
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ jre_packages }}"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

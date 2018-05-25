@@ -1,0 +1,12 @@
+---
+- name: Remove resolvconf package
+  apt:
+    pkg: resolvconf
+    state: absent
+
+- name: Set resolv.conf
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

@@ -1,0 +1,63 @@
+---
+# ./playbook.sh launch-ansible.yml -e env=ops -e hostname=ansible.ops.acme.net
+
+- import_playbook: plays/validate-env.yml
+- import_playbook: plays/validate-hostname.yml
+
+- name: Launch instance
+  hosts: localhost
+  connection: local
+
+  roles:
+
+    - role: launch
+      tags: launch
+      image_type: ubuntu16
+      image_owner: vendor
+      launch_group: ansible
+      exact_count: 1
+      count_tag:
+        env: "{{ env }}"
+        project: ops
+        role: ansible
+        hostname: "{{ hostname }}"
+      subnets: "{{ subnet_ids[region].ops.private }}"
+      instance:
+        instance_profile_name: "{{ customer }}-ops-ansible"
+        security_groups:
+          - "{{ customer }}-ops-all"
+          - "{{ customer }}-ops-ansible"
+          - "{{ customer }}-ops-splunk-forwarder"
+        tags:
+          Name: "{{ customer }}-ops-ansible"
+          role: ansible
+          project: ops
+          hostname: "{{ hostname }}"
+        type: t2.small
+        volumes:
+          - device_name: /dev/xvda
+            volume_type: gp2
+            volume_size: 16
+            delete_on_termination: yes
+
+
+- import_playbook: plays/install-python.yml
+  vars:
+    hosts_pattern: ansible
+
+
+- import_playbook: plays/set-hostname.yml
+  vars:
+    hosts_pattern: ansible
+
+
+- import_playbook: plays/register-internal-dns.yml
+  vars:
+    hosts_pattern: ansible
+    project: ops
+
+
+- import_playbook: configure-ansible.yml
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

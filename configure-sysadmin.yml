@@ -1,0 +1,32 @@
+---
+# ./playbook.sh configure-sysadmin.yml -e env=ops
+
+- import_playbook: plays/validate-env.yml
+
+- import_playbook: plays/group.yml
+  vars:
+    hosts_pattern: "tag_ansible_true:&tag_role_sysadmin:&tag_env_{{ env }}"
+    target_group: sysadmin
+
+
+- import_playbook: plays/common.yml
+  vars:
+    hosts_pattern: sysadmin
+
+
+- hosts: sysadmin
+  become: yes
+
+  roles:
+
+    - role: ansible
+      tags: ansible
+
+    - role: terraform
+      tags: terraform
+
+    - role: staff
+      tags: staff
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

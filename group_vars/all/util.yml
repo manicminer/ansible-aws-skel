@@ -1,0 +1,6 @@
+---
+
+date_time_numeric: "{{ ansible_date_time['iso8601'] | regex_replace('[^0-9]', '') }}"
+date_numeric: "{{ ansible_date_time['date'] | replace('-', '') }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

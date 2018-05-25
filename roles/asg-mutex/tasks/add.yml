@@ -1,0 +1,21 @@
+---
+# The 'MUTEX IN USE' string is critical for detecting,
+# outside of ansible-playbook command, a non-zero exit
+# which indicates that the target environment ASG and
+# its instances are actively being managed by Ansible.
+- name: Check if ASG is being_updated
+  tags: [ 'asg', 'common', 'mutex' ]
+  assert:
+    that: not item.value
+    msg: "ASG MUTEX IN USE {{ asg_name }} is being updated by {{ item.value }}"
+  when: item.key == asg_mutex_key and (force_update is not defined or not force_update | bool)
+  with_items: "{{ asg_details.results[0].tags }}"
+
+- name: Tag ASG as being_updated
+  ec2_asg:
+    region: "{{ region }}"
+    name: "{{ asg_name }}"
+    health_check_type: "{{ asg_details.results[0].health_check_type }}" # required to prevent resetting to the default
+    tags: "{{ asg_details.results[0].tags | format_asg_tags | union([{asg_mutex_key: ansible_hostname, 'propagate_at_launch': False}]) | list }}"
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 expandtab:

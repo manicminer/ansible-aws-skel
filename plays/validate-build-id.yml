@@ -1,0 +1,18 @@
+---
+- name: Validate environment
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tags: always
+
+  tasks:
+
+    - name: Ensure build_id is specified
+      assert:
+        that:
+          - build_id is defined
+          - build_id | match('[0-9]+')
+        msg: "Please specify a valid build_id (should be numeric)"
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:

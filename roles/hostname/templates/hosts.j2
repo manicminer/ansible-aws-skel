@@ -1,0 +1,5 @@
+127.0.0.1       localhost
+{{ config.ip }} {{ fqdn }} {{ fqdn | regex_replace('^([^.]+)\\..*', '\\1') }} ip-{{ config.ip | replace('.', '-') }}
+::1             localhost ip6-localhost ip6-loopback
+ff02::1         ip6-allnodes
+ff02::2         ip6-allrouters

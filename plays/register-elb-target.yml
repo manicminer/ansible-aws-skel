@@ -1,0 +1,17 @@
+---
+
+- name: Register as ELB target
+  hosts: "{{ hosts_pattern }}"
+  connection: local
+
+  tasks:
+
+    - name: Register instance with target group
+      elb_target:
+        region: "{{ region }}"
+        target_group_name: "{{ target_group }}"
+        target_id: "{{ ec2_id }}"
+        state: present
+
+
+# vim: set ft=ansible ts=2 sts=2 sw=2 et:
