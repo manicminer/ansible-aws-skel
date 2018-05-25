@@ -23,6 +23,22 @@ def list_search(value, expression):
             ret.append(v)
     return ret
 
+def prepend_list(value, slug):
+    return [slug + v for v in value]
+
+def append_list(value, slug):
+    return [v + slug for v in value]
+
+def push(value, item):
+    if item:
+        value.append(item)
+    return value
+
+def split_or_list(value, delim=','):
+    if type(value) in [list,tuple]:
+        return value
+    return str(value).split(delim)
+
 def string_or_first_list_item(value):
     if isinstance(value, list):
         return value[0]
@@ -36,6 +52,10 @@ class FilterModule(object):
             'list_match': list_match,
             'list_regex_replace': list_regex_replace,
             'list_search': list_search,
+            'prepend_list': prepend_list,
+            'append_list': append_list,
+            'push': push,
+            'split_or_list': split_or_list,
             'string_or_first_list_item': string_or_first_list_item
         }
 
